@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: auxanos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: auxanos_admin
+      POSTGRES_PASSWORD: auxanos_dev_password
+      POSTGRES_DB: auxanos_core
+    ports:
+      - '5432:5432'
+    volumes:
+      - auxanos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U auxanos_admin -d auxanos_core']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: auxanos-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command: redis-server --appendonly yes
+    volumes:
+      - auxanos_redisdata:/data
+
+volumes:
+  auxanos_pgdata:
+  auxanos_redisdata:

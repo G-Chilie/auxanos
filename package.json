@@ -1,0 +1,20 @@
+{
+  "name": "auxanos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AUXANOS — Global Day-Zero Banking & Cross-Border Financial Infrastructure",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}
