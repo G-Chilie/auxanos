@@ -1,31 +1,62 @@
 # AUXANOS (Αὐξάνω)
 
-> **Global Day-Zero Banking & Cross-Border Financial Infrastructure**
+> **Global Day-Zero Banking & Cross-Border Financial Infrastructure (`GBP` $\leftrightarrow$ `NGN`, `GHS`, `KES`)**
 
-**AUXANOS** is a borderless financial platform enabling international students, skilled immigrants, and global citizens to open compliant local accounts from Day Zero and move funds across corridors (`GBP` $\leftrightarrow$ `NGN`, `GHS`, `KES`, and global currencies) without arbitrary account freezes.
+**AUXANOS** solves the UK newcomer banking Catch-22: international students and skilled workers arriving in the United Kingdom need a UK bank account (Sort Code + Account Number) to rent accommodation, sign contracts, or receive salaries/stipends, yet traditional banks and mainstream neobanks reject thin-file newcomers who lack UK proof of address—or freeze their accounts when cross-border tuition and rent remittances arrive from Nigeria, Ghana, or Kenya.
+
+With **AUXANOS**, newcomers onboard **from Day Zero (pre-arrival)** using their biometric passport and UK Home Office **eVisa Share Code (`W`/`S`/`R`) + CAS/CoS sponsor reference**, and pre-clear legitimate incoming funds through our **Anti-Freeze Source-of-Funds Shield**.
 
 ---
 
 ## Repository Architecture (Enterprise Monorepo)
 
-This repository uses an npm workspace monorepo designed for multi-team scalability and strict domain isolation:
-
 ```text
 auxanos/
-├── apps/
-│   ├── api/                # NestJS Core Banking & Payment Engine (Modular DDD)
-│   └── web/                # Next.js Client & Operations Console
 ├── packages/
-│   └── shared/             # Shared TypeScript Domain Types, Currency & Money Primitives
-├── docker-compose.yml      # Local PostgreSQL 16 & Redis 7 Infrastructure
-└── package.json            # Root Workspace Configuration
+│   └── shared/                 # @auxanos/shared — Immutable Money Value Object & ISO-4217 Currencies
+│       └── src/
+│           ├── currencies.ts   # Minor-unit specifications (GBP, NGN, GHS, KES, USD, EUR)
+│           ├── money.ts        # Zero-float BigInt Money primitive & basis-point fee math
+│           └── money.spec.ts   # Unit tests for currency & minor-unit invariants
+├── apps/
+│   ├── api/                    # @auxanos/api — Core Banking, Ledger, eVisa KYC & FX Engine
+│   │   ├── prisma/
+│   │   │   └── schema.prisma   # PostgreSQL schema for Wallets, JournalEntries, KYC & Pre-Clearances
+│   │   └── src/modules/
+│   │       ├── ledger/         # ACID Double-Entry Accounting Engine + SHA-256 Hash Chain
+│   │       ├── kyc/            # UKVI eVisa Share Code Verification & Anti-Freeze Pre-Clearance
+│   │       └── fx/             # NGN, GHS, KES -> GBP Rate-Locked Quoting & Two-Leg Settlement
+│   └── web/                    # @auxanos/web — Next.js 14 Day-Zero UK Banking & Corridor Console
+├── docker-compose.yml          # Local PostgreSQL 16 & Redis 7 Infrastructure
+└── package.json                # Root Workspace Configuration
 ```
 
 ---
 
-## Engineering Standards
+## Engineering & Security Guarantees
 
-1. **Zero-Float Financial Math:** All monetary values are represented strictly in integer minor units (`BigInt` — e.g., pence, kobo, pesewas, cents) paired with an explicit ISO-4217 currency code.
-2. **Immutable Double-Entry Accounting:** Every balance change is backed by an atomic, zero-sum journal entry ($\sum \text{Debits} = \sum \text{Credits}$).
-3. **Idempotency by Default:** Every state-mutating request requires a deterministic idempotency key.
-4. **Feature-by-Feature Delivery:** Every module is unit-tested, reviewed, and locked in via atomic commits.
+1. **Zero-Float Financial Arithmetic (`@auxanos/shared`):** All monetary values are stored and manipulated strictly in integer minor units (`BigInt` — `pence`, `kobo`, `pesewas`, `cents`) paired with an explicit currency code.
+2. **Immutable Double-Entry Ledger (`LedgerService`):** Every balance change requires a balanced journal entry ($\sum \text{Debits} = \sum \text{Credits}$) and is linked into a tamper-evident **SHA-256 hash chain** (`previousEntryHash` $\rightarrow$ `entryHash`).
+3. **Deterministic Idempotency:** All ledger and settlement mutations require an `idempotencyKey` to prevent double-spending on network retries or webhook replays.
+4. **Zero-Trust Pre-Arrival KYC & Anti-Freeze Shield (`KycOnboardingService`):** Verifies UKVI Share Codes and issues cryptographic `SourceOfFundsPreClearance` certificates for sponsor remittances.
+
+---
+
+## Running Tests & Local Infrastructure
+
+```bash
+# 1. Start local PostgreSQL 16 & Redis 7 containers
+npm run db:up
+
+# 2. Run all unit test suites across @auxanos/shared and @auxanos/api
+npm test
+```
+
+---
+
+## Active Engineering Roadmap
+
+- [x] **Phase 1 (Core Foundation):** Zero-float `Money` primitive, Prisma schema, SHA-256 hash-chained `LedgerService`, UKVI eVisa `KycOnboardingService`, `FxCorridorService` (`NGN`/`GHS`/`KES` $\rightarrow$ `GBP`), and Next.js Day-Zero Console.
+- [ ] **Phase 2 (REST/GraphQL Controllers & Persistence Adapters):** Wire Prisma repository adapters and NestJS HTTP controllers with request validation and rate limiting.
+- [ ] **Phase 3 (BaaS & Payment Rail Webhooks):** HMAC-SHA256 webhook verification for UK Faster Payments (Griffin/Modulr), Paystack Virtual NUBAN (`NGN`), Ghana Mobile Money (`GHS`), and Safaricom M-Pesa (`KES`).
+- [ ] **Phase 4 (Rent & Tuition Escrow Vaults):** Direct university tuition disbursement and UK landlord rent standing orders with automated UK credit-builder reporting.
