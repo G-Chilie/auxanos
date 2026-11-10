@@ -1,0 +1,19 @@
+{
+  "name": "@auxanos/api",
+  "version": "0.1.0",
+  "description": "AUXANOS Core Banking API — Double-Entry Ledger, UKVI eVisa KYC & Multi-Corridor FX Engine",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/modules/ledger/ledger.service.spec.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@auxanos/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

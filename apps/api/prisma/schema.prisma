@@ -1,0 +1,176 @@
+// AUXANOS — Enterprise Core Banking, Double-Entry Ledger & Immigrant Onboarding Schema
+// Supports GBP (UK Faster Payments) <-> NGN (Nigeria), GHS (Ghana), KES (Kenya), USD, EUR
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CurrencyCode {
+  GBP
+  NGN
+  GHS
+  KES
+  USD
+  EUR
+}
+
+enum CorridorCountry {
+  NG
+  GH
+  KE
+  GB
+}
+
+enum VisaCategory {
+  STUDENT_ROUTE
+  SKILLED_WORKER
+  HEALTH_AND_CARE
+  GRADUATE_ROUTE
+  GLOBAL_TALENT
+}
+
+enum KycVerificationStatus {
+  PENDING_PRE_ARRIVAL
+  EVISA_VERIFIED
+  DAY_ZERO_ACTIVE
+  ENHANCED_REVIEW
+  REJECTED
+}
+
+enum EntryDirection {
+  DEBIT
+  CREDIT
+}
+
+enum JournalStatus {
+  PENDING
+  POSTED
+  REVERSED
+}
+
+model User {
+  id                String                      @id @default(uuid())
+  email             String                      @unique
+  fullName          String
+  phoneNumber       String                      @unique
+  originCountry     CorridorCountry
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+
+  kycProfile        ImmigrantKycProfile?
+  wallets           Wallet[]
+  preClearances     SourceOfFundsPreClearance[]
+  fxQuotes          FxQuote[]
+}
+
+model ImmigrantKycProfile {
+  id                      String                @id @default(uuid())
+  userId                  String                @unique
+  user                    User                  @relation(fields: [userId], references: [id])
+
+  passportNumberHash      String
+  passportExpiryDate      DateTime
+  nationality             CorridorCountry
+  visaCategory            VisaCategory
+  ukviShareCode           String
+  sponsorReferenceNumber  String
+  sponsorInstitutionName  String
+  expectedArrivalDate     DateTime
+
+  trustScore              Int                   @default(0)
+  status                  KycVerificationStatus @default(PENDING_PRE_ARRIVAL)
+  verifiedAt              DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+}
+
+model Wallet {
+  id                  String          @id @default(uuid())
+  userId              String
+  user                User            @relation(fields: [userId], references: [id])
+  currency            CurrencyCode
+  balanceMinor        BigInt          @default(0)
+
+  ukSortCode          String?
+  ukAccountNumber     String?
+  iban                String?
+  localAccountRef     String?
+  isFrozen            Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  postings            LedgerPosting[]
+
+  @@unique([userId, currency])
+}
+
+model JournalEntry {
+  id                  String          @id @default(uuid())
+  idempotencyKey      String          @unique
+  reference           String
+  description         String
+  currency            CurrencyCode
+  status              JournalStatus   @default(POSTED)
+  previousEntryHash   String?
+  entryHash           String
+  createdAt           DateTime        @default(now())
+
+  postings            LedgerPosting[]
+}
+
+model LedgerPosting {
+  id                  String          @id @default(uuid())
+  journalEntryId      String
+  journalEntry        JournalEntry    @relation(fields: [journalEntryId], references: [id])
+  walletId            String
+  wallet              Wallet          @relation(fields: [walletId], references: [id])
+
+  direction           EntryDirection
+  amountMinor         BigInt
+  createdAt           DateTime        @default(now())
+
+  @@index([walletId])
+  @@index([journalEntryId])
+}
+
+model SourceOfFundsPreClearance {
+  id                      String          @id @default(uuid())
+  userId                  String
+  user                    User            @relation(fields: [userId], references: [id])
+
+  originCountry           CorridorCountry
+  sourceCurrency          CurrencyCode
+  sponsorFullName         String
+  sponsorRelationship     String
+  sponsorBankOrMobileRef  String
+  purpose                 String
+  expectedAmountMinor     BigInt
+  remainingAllowanceMinor BigInt
+
+  clearanceCode           String          @unique
+  riskAssessmentScore     Int
+  isApproved              Boolean         @default(false)
+  expiresAt               DateTime
+  createdAt               DateTime        @default(now())
+}
+
+model FxQuote {
+  id                  String          @id @default(uuid())
+  userId              String
+  user                User            @relation(fields: [userId], references: [id])
+
+  sourceCurrency      CurrencyCode
+  targetCurrency      CurrencyCode
+  sourceAmountMinor   BigInt
+  targetAmountMinor   BigInt
+  exchangeRate        Float
+  feeMinor            BigInt
+  expiresAt           DateTime
+  isExecuted          Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+}
