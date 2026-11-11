@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "npm run build && node --test dist/modules/ledger/ledger.service.spec.js dist/modules/kyc/kyc-onboarding.service.spec.js dist/modules/fx/fx-corridor.service.spec.js dist/modules/webhooks/webhook-security.service.spec.js",
+    "test": "npm run build && node --test dist/modules/ledger/ledger.service.spec.js dist/modules/kyc/kyc-onboarding.service.spec.js dist/modules/fx/fx-corridor.service.spec.js dist/modules/webhooks/webhook-security.service.spec.js dist/modules/escrow/escrow-vault.service.spec.js",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
