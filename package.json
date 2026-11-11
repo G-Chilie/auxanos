@@ -2,6 +2,7 @@
   "name": "auxanos",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "AUXANOS — Global Day-Zero Banking & Cross-Border Financial Infrastructure",
   "workspaces": [
     "apps/*",
